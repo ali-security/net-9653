@@ -5959,3 +5959,16 @@ func testExtendedConnectReadFrameError(t testing.TB) {
 		t.Fatalf("after connection closed: RoundTrip succeeded; want error")
 	}
 }
+
+func TestTransportDoNotHangOnZeroMaxFrameSize(t *testing.T) {
+	synctestTest(t, testTransportDoNotHangOnZeroMaxFrameSize)
+}
+func testTransportDoNotHangOnZeroMaxFrameSize(t testing.TB) {
+	tc := newTestClientConn(t)
+	tc.writeSettings(Setting{ID: SettingMaxFrameSize, Val: 0})
+	tc.wantFrameType(FrameSettings)
+
+	req, _ := http.NewRequest("POST", "https://dummy.tld/", strings.NewReader("body"))
+	tc.roundTrip(req)
+	// Previously, https://go.dev/issue/78476 caused an infinite hang here.
+}
